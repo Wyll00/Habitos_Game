@@ -1,0 +1,16 @@
+# Entorno virtual
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Base de datos local (NO subir a git)
+database.db
+
+# Secretos (NO subir nunca: lleva la contraseña de Supabase)
+.env
+
+# Imágenes subidas por el usuario
+static/uploads/

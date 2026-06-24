@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso | Disciplina Integral</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+            background: radial-gradient(circle at 50% 25%, #1f1f1f 0%, var(--bg-color) 70%);
+        }
+        .login-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 2.6rem 2.2rem;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+            text-align: center;
+        }
+        .login-card .shield { color: var(--accent-gold); margin-bottom: 0.9rem; }
+        .login-card h1 {
+            font-family: var(--font-serif);
+            font-size: 1.5rem;
+            color: var(--text-main);
+            margin-bottom: 0.25rem;
+        }
+        .login-card .sub {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 1.8rem;
+        }
+        .login-card input[type="password"] {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            outline: none;
+        }
+        .login-card input[type="password"]:focus { border-color: var(--accent-gold); }
+        .login-card button {
+            width: 100%;
+            padding: 0.85rem;
+            background: var(--accent-gold);
+            color: #121212;
+            border: none;
+            border-radius: 6px;
+            font-family: var(--font-sans);
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .login-card button:hover { opacity: 0.9; }
+        .login-error {
+            background: rgba(114, 47, 55, 0.25);
+            border: 1px solid var(--accent-burgundy);
+            color: #ff8a8a;
+            padding: 0.6rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <form class="login-card" method="POST" action="{{ url_for('login') }}">
+        <svg class="shield" xmlns="http://www.w3.org/2000/svg" width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+        <h1>Disciplina Integral</h1>
+        <p class="sub">Acceso restringido</p>
+        {% if error %}<div class="login-error">{{ error }}</div>{% endif %}
+        <input type="password" name="password" placeholder="Contraseña" autofocus required>
+        <button type="submit">Acceder</button>
+    </form>
+</body>
+</html>

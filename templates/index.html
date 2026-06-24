@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema CMS | Desarrollo Personal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- SIDEBAR NAVEGACIÓN -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="logo">
+                    <i data-lucide="shield"></i> Disciplina Integral
+                </h1>
+                <div class="rank-badge" id="sidebar-rank-badge">
+                    <div class="rank-name" id="sidebar-rank-name"><i data-lucide="star"></i> {{ rank_info.name }}</div>
+                    <div class="xp-info">
+                        <span id="sidebar-xp-current">{{ rank_info.xp }}</span> / <span id="sidebar-xp-max">{{ rank_info.max_xp }}</span> XP
+                    </div>
+                    <div class="progress-bar-container" style="height: 6px; margin-top: 5px;">
+                        <div class="progress-fill" id="sidebar-xp-fill" style="width: {{ rank_info.progress }}%; background-color: var(--accent-gold);"></div>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" onclick="switchTab('habits')">
+                    <i data-lucide="target"></i> Tareas Diarias
+                </button>
+                <button class="nav-btn" onclick="switchTab('almanac')">
+                    <i data-lucide="calendar"></i> Almanaque
+                </button>
+                <button class="nav-btn" onclick="switchTab('objectives')">
+                    <i data-lucide="calendar-days"></i> Objetivos
+                </button>
+
+                <button class="nav-btn" onclick="switchTab('challenges')">
+                    <i data-lucide="swords"></i> Retos
+                </button>
+                <button class="nav-btn" onclick="switchTab('journal')">
+                    <i data-lucide="book-open"></i> Mi Bitácora
+                </button>
+                <button class="nav-btn" onclick="switchTab('stats')">
+                    <i data-lucide="bar-chart-2"></i> Estadísticas
+                </button>
+                <button class="nav-btn" onclick="switchTab('nutrition')">
+                    <i data-lucide="apple"></i> Logística (Nutrición)
+                </button>
+                <button class="nav-btn" onclick="switchTab('profile')">
+                    <i data-lucide="user"></i> Ficha Personal
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="night-mode-toggle" class="btn-primary" style="width: 100%; background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); display: flex; justify-content: center; align-items: center; gap: 0.5rem;" onclick="toggleNightMode()">
+                    <i data-lucide="moon"></i> Visión Nocturna
+                </button>
+                {% if login_enabled %}
+                <a href="{{ url_for('logout') }}" class="btn-primary" style="width: 100%; background: transparent; border: 1px solid var(--accent-burgundy); color: var(--text-muted); display: flex; justify-content: center; align-items: center; gap: 0.5rem; text-decoration: none; margin-top: 0.6rem;">
+                    <i data-lucide="log-out"></i> Cerrar Sesión
+                </a>
+                {% endif %}
+            </div>
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="main-content">
+            <div class="container">
+        <!-- SECCIÓN: HÁBITOS / TAREAS DIARIAS -->
+        <div id="habits-section" class="tab-content active">
+            <header class="dashboard-header">
+                <div class="flex-header">
+                    <div>
+                        <h2>Tus Tareas Diarias</h2>
+                        <p class="date">La constancia forja el carácter.</p>
+                    </div>
+                </div>
+            </header>
+
+            <div id="week-slider-container" style="margin-bottom: 2rem;">
+                <!-- Se llena vía JS -->
+            </div>
+            <input type="hidden" id="calendar-date" value="{{ today.strftime('%Y-%m-%d') }}">
+
+            <div id="habits-list">
+                <!-- Se llena vía JS -->
+            </div>
+
+            <button class="btn-primary mt-2" onclick="document.getElementById('habit-modal').style.display='flex'">
+                <i data-lucide="plus-circle"></i> Añadir Tarea Diaria
+            </button>
+        </div>
+
+        <!-- SECCIÓN: ALMANAQUE -->
+        <div id="almanac-section" class="tab-content">
+            <header class="dashboard-header">
+                <h2>Almanaque Mensual</h2>
+                <p class="date">Registro de disciplina diaria</p>
+            </header>
+            
+            <div style="background: var(--card-bg); padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                <button class="btn-primary" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-color);" onclick="prevAlmanacMonth()">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <h3 id="almanac-month-title" style="font-family: var(--font-serif); color: var(--accent-gold); margin: 0;">Mes Año</h3>
+                <button class="btn-primary" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-color);" onclick="nextAlmanacMonth()">
+                    <i data-lucide="chevron-right"></i>
+                </button>
+            </div>
+            
+            <div id="almanac-grid" class="calendar-grid">
+                <!-- Se llena vía JS -->
+            </div>
+        </div>
+
+        <!-- SECCIÓN: OBJETIVOS -->
+        <div id="objectives-section" class="tab-content">
+            <header class="dashboard-header">
+                <h2>Objetivos a Largo Plazo</h2>
+                <p class="date">Tu visión estratégica</p>
+            </header>
+            
+            <div class="obj-tabs" style="display: flex; gap: 1rem; margin-bottom: 2rem; overflow-x: auto; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                <button class="btn-primary obj-tab-btn" id="btn-obj-mensual" onclick="switchObjTab('mensual')" style="background:var(--accent-burgundy); border-color:var(--accent-burgundy);">Mensuales</button>
+                <button class="btn-primary obj-tab-btn" id="btn-obj-trimestral" onclick="switchObjTab('trimestral')" style="background:transparent; color:var(--text-main); border-color:var(--border-color);">Trimestrales</button>
+                <button class="btn-primary obj-tab-btn" id="btn-obj-semestral" onclick="switchObjTab('semestral')" style="background:transparent; color:var(--text-main); border-color:var(--border-color);">Semestrales</button>
+                <button class="btn-primary obj-tab-btn" id="btn-obj-anual" onclick="switchObjTab('anual')" style="background:transparent; color:var(--text-main); border-color:var(--border-color);">Anuales</button>
+            </div>
+            
+            <div id="obj-mensual-tab" class="obj-tab-content">
+                <div id="obj-mensual-list"></div>
+                <button class="btn-primary mt-2" style="font-size: 0.9rem;" onclick="openObjModal('mensual')"><i data-lucide="plus"></i> Añadir Objetivo Mensual</button>
+            </div>
+            <div id="obj-trimestral-tab" class="obj-tab-content" style="display: none;">
+                <div id="obj-trimestral-list"></div>
+                <button class="btn-primary mt-2" style="font-size: 0.9rem;" onclick="openObjModal('trimestral')"><i data-lucide="plus"></i> Añadir Objetivo Trimestral</button>
+            </div>
+            <div id="obj-semestral-tab" class="obj-tab-content" style="display: none;">
+                <div id="obj-semestral-list"></div>
+                <button class="btn-primary mt-2" style="font-size: 0.9rem;" onclick="openObjModal('semestral')"><i data-lucide="plus"></i> Añadir Objetivo Semestral</button>
+            </div>
+            <div id="obj-anual-tab" class="obj-tab-content" style="display: none;">
+                <div id="obj-anual-list"></div>
+                <button class="btn-primary mt-2" style="font-size: 0.9rem;" onclick="openObjModal('anual')"><i data-lucide="plus"></i> Añadir Objetivo Anual</button>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: RETOS -->
+        <div id="challenges-section" class="tab-content">
+            <header class="dashboard-header flex-header">
+                <h2>Campañas de Resistencia</h2>
+                <button class="btn-primary" onclick="openModal('challenge-modal')">
+                    <i data-lucide="swords"></i> Iniciar Reto
+                </button>
+            </header>
+
+            <main class="challenges-feed" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div class="alert-box" style="background: rgba(114, 47, 55, 0.15); border: 1px solid var(--accent-burgundy); padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+                    <h4 style="color: var(--accent-burgundy); display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="alert-triangle"></i> Modo Hardcore Activo</h4>
+                    <p style="font-size: 0.9rem; color: #ccc;">Si no haces Check-in diario en un reto, perderás toda tu racha acumulada. La disciplina no perdona.</p>
+                </div>
+
+                {% if challenges %}
+                    {% for ch in challenges %}
+                    <div class="journal-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <h3 style="font-family: var(--font-serif); color: var(--accent-gold); font-size: 1.5rem;">{{ ch.name }}</h3>
+                            {% if ch.last_checkin == today %}
+                                <span class="category-badge" style="background: rgba(63, 89, 65, 0.2); color: #2ecc71;"><i data-lucide="check" style="width: 14px; height: 14px;"></i> Check-in Listo</span>
+                            {% else %}
+                                <button class="btn-primary" style="background-color: var(--accent-burgundy);" onclick="checkinChallenge({{ ch.id }})">Hacer Check-in</button>
+                            {% endif %}
+                        </div>
+                        <p style="color: #ccc; margin-bottom: 1rem;">Día {{ ch.current_streak }} de {{ ch.total_days }} completados.</p>
+                        
+                        <div class="progress-bar-container" style="height: 12px; background: rgba(255,255,255,0.05);">
+                            <div class="progress-fill" style="width: {{ (ch.current_streak / ch.total_days) * 100 }}%;"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i data-lucide="shield-alert" style="width: 40px; height: 40px; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>No tienes ningún reto activo. Demuestra tu disciplina iniciando uno nuevo.</p>
+                    </div>
+                {% endif %}
+            </main>
+        </div>
+
+        <!-- SECCIÓN: DIARIO / BITÁCORA -->
+        <div id="journal-section" class="tab-content">
+            <header class="dashboard-header flex-header">
+                <h2>Registros y Progreso</h2>
+                <button class="btn-primary" onclick="openModal('entry-modal')">
+                    <i data-lucide="pen-line"></i> Nueva Entrada
+                </button>
+            </header>
+
+            <main class="journal-feed">
+                {% if entries %}
+                    {% for entry in entries %}
+                    <article class="journal-card">
+                        <div class="journal-header">
+                            <span class="category-badge {{ entry.category|lower|replace(' ', '-') }}">{{ entry.category }}</span>
+                            <span class="entry-date">{{ entry.created_at.strftime('%d %b %Y - %H:%M') }}</span>
+                        </div>
+                        <h3 class="entry-title">{{ entry.title }}</h3>
+                        {% if entry.content %}
+                        <p class="entry-content">{{ entry.content }}</p>
+                        {% endif %}
+                        {% if entry.image_filename %}
+                        <div class="entry-image-container">
+                            <img src="{{ url_for('static', filename='uploads/' + entry.image_filename) }}" alt="Progreso" class="entry-image">
+                        </div>
+                        {% endif %}
+                    </article>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i data-lucide="scroll" style="width: 40px; height: 40px; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>Tu bitácora está vacía. Registra tu primer entrenamiento, receta o reflexión.</p>
+                    </div>
+                {% endif %}
+            </main>
+        </div>
+
+        <!-- SECCIÓN: ESTADÍSTICAS -->
+        <div id="stats-section" class="tab-content">
+            <header class="dashboard-header">
+                <h2>Reporte de Inteligencia</h2>
+                <p class="date">Análisis Global de Progreso</p>
+            </header>
+
+            <main class="stats-dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i data-lucide="flame" class="stat-icon"></i>
+                        <h4 class="stat-value" id="stat-best-streak">0</h4>
+                        <p class="stat-label">Mejor Racha de Hábitos</p>
+                    </div>
+                    <div class="stat-card">
+                        <i data-lucide="target" class="stat-icon"></i>
+                        <h4 class="stat-value" id="stat-almanac">0 / 0</h4>
+                        <p class="stat-label">Misiones Completadas</p>
+                    </div>
+                    <div class="stat-card">
+                        <i data-lucide="swords" class="stat-icon"></i>
+                        <h4 class="stat-value" id="stat-challenges">0 / 0</h4>
+                        <p class="stat-label">Retos Activos / Ganados</p>
+                    </div>
+                </div>
+
+                <div class="chart-container" style="margin-top: 3rem; background: var(--card-bg); padding: 2rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+                    <h3 style="font-family: var(--font-serif); color: var(--accent-gold); margin-bottom: 1.5rem;">Distribución de la Bitácora</h3>
+                    <div style="max-width: 400px; margin: 0 auto;">
+                        <canvas id="journalChart"></canvas>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- SECCIÓN: NUTRICIÓN -->
+        <div id="nutrition-section" class="tab-content">
+            <div class="header-actions">
+                <h2>Logística de Raciones</h2>
+                <input type="date" id="nutrition-date-picker" class="input-field" style="width: auto;" onchange="loadNutritionForDate()">
+            </div>
+            
+            <div class="nutrition-hud">
+                <div class="macro-card">
+                    <h4 style="color:var(--text-muted);">Calorías</h4>
+                    <div class="macro-value"><span id="nut-cal-current">0</span> / <span id="nut-cal-max">2500</span> kcal</div>
+                    <div class="progress-bar-container"><div class="progress-fill macro-cal" id="nut-cal-fill" style="width: 0%;"></div></div>
+                </div>
+                <div class="macro-card">
+                    <h4 style="color:var(--text-muted);">Proteínas</h4>
+                    <div class="macro-value"><span id="nut-pro-current">0</span> / <span id="nut-pro-max">160</span> g</div>
+                    <div class="progress-bar-container"><div class="progress-fill macro-pro" id="nut-pro-fill" style="width: 0%;"></div></div>
+                </div>
+                <div class="macro-card">
+                    <h4 style="color:var(--text-muted);">Carbohidratos</h4>
+                    <div class="macro-value"><span id="nut-carb-current">0</span> / <span id="nut-carb-max">300</span> g</div>
+                    <div class="progress-bar-container"><div class="progress-fill macro-carb" id="nut-carb-fill" style="width: 0%;"></div></div>
+                </div>
+                <div class="macro-card">
+                    <h4 style="color:var(--text-muted);">Grasas</h4>
+                    <div class="macro-value"><span id="nut-fat-current">0</span> / <span id="nut-fat-max">70</span> g</div>
+                    <div class="progress-bar-container"><div class="progress-fill macro-fat" id="nut-fat-fill" style="width: 0%;"></div></div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 1rem;">
+                <h3 style="margin-bottom: 1rem;"><i data-lucide="plus-circle"></i> Registrar Ración</h3>
+                <div class="add-meal-form">
+                    <div style="flex: 2;">
+                        <select id="food-select" class="input-field">
+                            <option value="">Selecciona un alimento...</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; display:flex; gap:0.5rem; align-items:center;">
+                        <input type="number" id="meal-quantity" class="input-field" placeholder="Gramos (g)" min="1">
+                        <button class="btn-primary" onclick="submitMeal()">Añadir</button>
+                    </div>
+                    <button class="btn-primary" style="background: var(--card-bg); color: var(--text-muted);" onclick="document.getElementById('new-food-modal').style.display='flex'">
+                        <i data-lucide="plus"></i> Nuevo Alimento
+                    </button>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 1rem;">
+                <h3>Diario de Hoy</h3>
+                <div id="meals-list" style="margin-top: 1rem;">
+                    <!-- Meal logs here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: FICHA PERSONAL -->
+        <div id="profile-section" class="tab-content">
+            <header class="dashboard-header">
+                <h2>Perfil del Comandante</h2>
+                <p class="date">Identidad y Estado Actual</p>
+            </header>
+
+            <main class="profile-card">
+                <div class="profile-header" style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem;">
+                    <div class="profile-pic-container" style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; background: var(--card-bg); border: 2px solid var(--accent-gold); display: flex; justify-content: center; align-items: center;">
+                        {% if profile.profile_image %}
+                        <img src="{{ url_for('static', filename='uploads/' + profile.profile_image) }}" alt="Profile Picture" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                        <i data-lucide="camera" style="width: 40px; height: 40px; color: var(--text-muted);"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h3 style="color: var(--accent-gold); font-family: var(--font-serif); font-size: 1.5rem;">{{ profile.name }}</h3>
+                        <p style="color: var(--text-muted);">Comandante en Jefe</p>
+                    </div>
+                </div>
+
+                <form id="profile-form" onsubmit="updateProfile(event)" enctype="multipart/form-data">
+                    <div class="form-group file-group" style="margin-bottom: 2rem;">
+                        <label for="profile_image" class="file-label" id="profile-img-label">
+                            <i data-lucide="image" class="icon"></i> Cambiar Foto de Perfil
+                        </label>
+                        <input type="file" id="profile_image" name="profile_image" accept="image/*">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="prof-name">Nombre / Alias</label>
+                        <input type="text" id="prof-name" value="{{ profile.name }}" required>
+                    </div>
+                    <div class="form-row" style="display: flex; gap: 1rem;">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="prof-age">Edad</label>
+                            <input type="number" id="prof-age" value="{{ profile.age }}" min="10" max="120" required>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="prof-weight">Peso (kg)</label>
+                            <input type="number" step="0.1" id="prof-weight" value="{{ profile.weight }}" required>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="prof-height">Estatura (cm)</label>
+                            <input type="number" step="0.1" id="prof-height" value="{{ profile.height }}" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="prof-goal">Objetivo Principal / Misión de Vida</label>
+                        <textarea id="prof-goal" rows="3">{{ profile.goal }}</textarea>
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">
+                        <i data-lucide="save"></i> Actualizar Ficha
+                    </button>
+                </form>
+            </main>
+        </div>
+        <!-- Cierre de container -->
+        </div>
+    </main>
+    <!-- Cierre de app-layout -->
+    </div>
+
+    <!-- MODAL: AÑADIR OBJETIVO -->
+    <div id="obj-modal" class="modal">
+        <div class="modal-content">
+            <i data-lucide="x" class="close-btn" onclick="closeModal('obj-modal')"></i>
+            <h2>Añadir Objetivo</h2>
+            <form id="new-obj-form" onsubmit="submitObjective(event)">
+                <input type="hidden" id="obj-timeframe">
+                <div class="form-group">
+                    <label>Título del Objetivo</label>
+                    <input type="text" id="obj-title" required placeholder="Ej. Conseguir el B2 de Inglés">
+                </div>
+                <button type="submit" class="btn-primary btn-block">Añadir</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: INICIAR RETO -->
+    <div id="challenge-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('challenge-modal')"><i data-lucide="x"></i></span>
+            <h2>Nuevo Reto Táctico</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Si fallas un día el check-in, la racha volverá a CERO.</p>
+            <form id="new-challenge-form" onsubmit="submitChallenge(event)">
+                <div class="form-group">
+                    <label for="challenge-title">Nombre del Reto</label>
+                    <input type="text" id="challenge-title" required placeholder="Ej. 75 Hard">
+                </div>
+                <div class="form-group">
+                    <label for="challenge-days">Días Totales</label>
+                    <input type="number" id="challenge-days" required min="1" max="365" value="30">
+                </div>
+                <button type="submit" class="btn-primary btn-block" style="background-color: var(--accent-burgundy); color: #fff;">
+                    <i data-lucide="swords"></i> Iniciar Reto Hardcore
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: AÑADIR HÁBITO -->
+    <div id="habit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('habit-modal')"><i data-lucide="x"></i></span>
+            <h2>Nuevo Hábito Táctico</h2>
+            <form id="new-habit-form" onsubmit="submitHabit(event)">
+                <div class="form-group">
+                    <label for="habit-name">Misión / Hábito</label>
+                    <input type="text" id="habit-name" required placeholder="Ej. Leer 20 págs. de filosofía">
+                </div>
+                <div class="form-group">
+                    <label for="habit-desc">Descripción (Opcional)</label>
+                    <input type="text" id="habit-desc" placeholder="Razón o detalle">
+                </div>
+                <button type="submit" class="btn-primary btn-block">Aceptar Misión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: NUEVA ENTRADA (CMS) -->
+    <div id="entry-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('entry-modal')"><i data-lucide="x"></i></span>
+            <h2>Registrar en Bitácora</h2>
+            <form id="new-entry-form" onsubmit="submitEntry(event)" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="category">Categoría</label>
+                    <select id="category" name="category" required>
+                        <option value="Gym & Fitness">Gym & Fitness</option>
+                        <option value="Recetas Saludables">Recetas Saludables</option>
+                        <option value="Inglés">Inglés</option>
+                        <option value="Lectura y Clásicos">Lectura y Clásicos</option>
+                        <option value="Hábitos de Caballero">Hábitos de Caballero</option>
+                        <option value="Estudios y Metas">Estudios y Metas</option>
+                        <option value="Retos Personales">Retos Personales</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="entry-title">Título</label>
+                    <input type="text" id="entry-title" name="title" required placeholder="Ej. Nuevo PR en Press de Banca">
+                </div>
+                <div class="form-group">
+                    <label for="entry-content">Reflexión o Detalles</label>
+                    <textarea id="entry-content" name="content" rows="4" placeholder="Escribe aquí tu receta, progreso, o pensamientos..."></textarea>
+                </div>
+                <div class="form-group file-group">
+                    <label for="entry-image" class="file-label">
+                        <i data-lucide="camera" class="icon"></i> Subir Imagen (Opcional)
+                    </label>
+                    <input type="file" id="entry-image" name="image" accept="image/*">
+                </div>
+                <button type="submit" class="btn-primary btn-block">Guardar en Bitácora</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL NUEVO ALIMENTO -->
+    <div id="new-food-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Registrar Nuevo Alimento Base</h2>
+                <button class="close-btn" onclick="closeModal('new-food-modal')">&times;</button>
+            </div>
+            <p style="color:var(--text-muted); margin-bottom:1rem; font-size:0.9rem;">Introduce los valores nutricionales por cada 100g.</p>
+            <form onsubmit="submitNewFood(event)">
+                <input type="text" id="new-food-name" class="input-field" placeholder="Nombre (ej. Pollo a la plancha)" required>
+                <div style="display:flex; gap:1rem;">
+                    <input type="number" id="new-food-cal" class="input-field" placeholder="Calorías" step="0.1" required>
+                    <input type="number" id="new-food-pro" class="input-field" placeholder="Proteínas (g)" step="0.1" required>
+                </div>
+                <div style="display:flex; gap:1rem;">
+                    <input type="number" id="new-food-carb" class="input-field" placeholder="Carbohidratos (g)" step="0.1" required>
+                    <input type="number" id="new-food-fat" class="input-field" placeholder="Grasas (g)" step="0.1" required>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%;">Guardar Alimento</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: EDITAR RACIÓN -->
+    <div id="edit-meal-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('edit-meal-modal')"><i data-lucide="x"></i></span>
+            <h2>Editar Cantidad</h2>
+            <form id="edit-meal-form" onsubmit="submitEditMeal(event)">
+                <input type="hidden" id="edit-meal-id">
+                <div class="form-group">
+                    <label for="edit-meal-quantity" id="edit-meal-label">Gramos / Unidades</label>
+                    <input type="number" id="edit-meal-quantity" class="input-field" step="0.1" required>
+                </div>
+                <button type="submit" class="btn-primary btn-block">Actualizar Ración</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>lucide.createIcons();</script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
