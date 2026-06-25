@@ -37,7 +37,31 @@ UPLOAD_FOLDER = os.path.join(basedir, 'static', 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# --- Seguridad y rendimiento ---
+# Límite de subida de archivos: 5 MB
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
+
+# Endurecimiento de la cookie de sesión (Render define RENDER=true => HTTPS en prod)
+is_prod = bool(os.environ.get('RENDER'))
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,    # JS no puede leer la cookie (anti-XSS)
+    SESSION_COOKIE_SAMESITE='Lax',   # mitiga CSRF
+    SESSION_COOKIE_SECURE=is_prod,   # solo por HTTPS en producción
+    PERMANENT_SESSION_LIFETIME=timedelta(days=30),
+)
+
+# Pool de conexiones: evita errores/latencia cuando Supabase corta conexiones inactivas
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True, 'pool_recycle': 280}
+
+# Cachear estáticos 1 año (con cache-busting por versión, ver versioned_static)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 365
+
 db = SQLAlchemy(app)
+
+# Extensiones de imagen permitidas en subidas
+ALLOWED_IMAGE_EXT = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+def allowed_image(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXT
 
 # ================= MODELS =================
 class Habit(db.Model):
@@ -164,6 +188,22 @@ def require_login():
     if not session.get('authenticated'):
         return redirect(url_for('login'))
 
+@app.after_request
+def security_headers(resp):
+    resp.headers['X-Content-Type-Options'] = 'nosniff'   # no adivinar MIME types
+    resp.headers['X-Frame-Options'] = 'DENY'             # anti-clickjacking
+    resp.headers['Referrer-Policy'] = 'no-referrer'
+    return resp
+
+@app.template_global()
+def versioned_static(filename):
+    """URL de un estático con ?v=<mtime>: permite cache fuerte sin servir versiones viejas."""
+    try:
+        v = int(os.path.getmtime(os.path.join(app.static_folder, filename)))
+    except OSError:
+        v = 1
+    return url_for('static', filename=filename, v=v)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if not APP_PASSWORD or session.get('authenticated'):
@@ -223,13 +263,13 @@ def habit_active_on(habit, target_date):
 def get_habits(date_str):
     target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     habits = Habit.query.all()
+    # Una sola consulta de logs para esta fecha (evita N+1)
+    logs = {l.habit_id: l.completed for l in HabitLog.query.filter_by(date=target_date).all()}
     res = []
     for h in habits:
         if habit_active_on(h, target_date):
-            log = HabitLog.query.filter_by(habit_id=h.id, date=target_date).first()
-            is_completed = log.completed if log else False
             res.append({'id': h.id, 'name': h.name, 'description': h.description,
-                        'streak': h.streak, 'completed': is_completed, 'days': h.days})
+                        'streak': h.streak, 'completed': logs.get(h.id, False), 'days': h.days})
     return jsonify(res)
 
 @app.route('/api/habit/new', methods=['POST'])
@@ -293,26 +333,25 @@ def delete_habit(habit_id):
 def get_week_slider():
     today = date.today()
     start_date = today - timedelta(days=3)
-    
-    days_data = []
+    end_date = start_date + timedelta(days=6)
     weekdays_es = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
-    
+
+    # Una consulta de hábitos y otra de logs para todo el rango (evita N+1)
+    all_habits = Habit.query.all()
+    done_by_date = {}
+    for l in HabitLog.query.filter(HabitLog.date >= start_date,
+                                   HabitLog.date <= end_date,
+                                   HabitLog.completed.is_(True)).all():
+        done_by_date.setdefault(l.date, set()).add(l.habit_id)
+
+    days_data = []
     for i in range(7):
         current_date = start_date + timedelta(days=i)
-        
-        # Calcular progreso de Hábitos Diarios para esta fecha
-        habits = [h for h in Habit.query.all() if habit_active_on(h, current_date)]
+        habits = [h for h in all_habits if habit_active_on(h, current_date)]
         total = len(habits)
-        
-        completed = 0
-        if total > 0:
-            logs = HabitLog.query.filter_by(date=current_date, completed=True).all()
-            # Intersect logs with actual habits that existed
-            valid_habit_ids = [h.id for h in habits]
-            completed = sum(1 for log in logs if log.habit_id in valid_habit_ids)
-            
+        done = done_by_date.get(current_date, set())
+        completed = sum(1 for h in habits if h.id in done)
         progress = int((completed / total) * 100) if total > 0 else 0
-        
         days_data.append({
             'date': current_date.strftime('%Y-%m-%d'),
             'day_name': weekdays_es[current_date.weekday()],
@@ -320,7 +359,6 @@ def get_week_slider():
             'progress': progress,
             'has_goals': total > 0
         })
-        
     return jsonify(days_data)
 
 # --- APIs Objetivos a Largo Plazo ---
@@ -370,7 +408,7 @@ def new_entry():
     image_filename = None
     if 'image' in request.files:
         file = request.files['image']
-        if file and file.filename != '':
+        if file and file.filename != '' and allowed_image(file.filename):
             filename = f"{int(datetime.now().timestamp())}_{secure_filename(file.filename)}"
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             image_filename = filename
@@ -399,7 +437,7 @@ def update_profile():
     
     if 'profile_image' in request.files:
         file = request.files['profile_image']
-        if file and file.filename != '':
+        if file and file.filename != '' and allowed_image(file.filename):
             filename = f"profile_{int(datetime.now().timestamp())}_{secure_filename(file.filename)}"
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             profile.profile_image = filename
@@ -477,31 +515,31 @@ def get_stats():
 def get_almanac_month(year, month):
     # Obtener el número de días del mes
     _, num_days = calendar.monthrange(year, month)
-    
+    first = date(year, month, 1)
+    last = date(year, month, num_days)
+
+    # Una consulta de hábitos y otra de logs para todo el mes (evita N+1)
+    all_habits = Habit.query.all()
+    done_by_date = {}
+    for l in HabitLog.query.filter(HabitLog.date >= first,
+                                   HabitLog.date <= last,
+                                   HabitLog.completed.is_(True)).all():
+        done_by_date.setdefault(l.date, set()).add(l.habit_id)
+
     days_data = []
-    
     for day in range(1, num_days + 1):
         current_date = date(year, month, day)
-        
-        # Calcular progreso de Hábitos Diarios para esta fecha
-        habits = [h for h in Habit.query.all() if habit_active_on(h, current_date)]
+        habits = [h for h in all_habits if habit_active_on(h, current_date)]
         total = len(habits)
-        
-        completed = 0
-        if total > 0:
-            logs = HabitLog.query.filter_by(date=current_date, completed=True).all()
-            valid_habit_ids = [h.id for h in habits]
-            completed = sum(1 for log in logs if log.habit_id in valid_habit_ids)
-            
+        done = done_by_date.get(current_date, set())
+        completed = sum(1 for h in habits if h.id in done)
         progress = int((completed / total) * 100) if total > 0 else 0
-        
         days_data.append({
             'date': current_date.strftime('%Y-%m-%d'),
             'day': day,
             'progress': progress,
             'has_habits': total > 0
         })
-        
     return jsonify(days_data)
 
 # --- APIs Nutrición (Suministros) ---
