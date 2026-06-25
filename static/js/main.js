@@ -5,9 +5,9 @@ const Toast = Swal.mixin({
     showConfirmButton: false,
     timer: 2800,
     timerProgressBar: true,
-    background: '#1e1e1e',
-    color: '#e0e0e0',
-    iconColor: '#d4af37',
+    background: '#232619',
+    color: '#ecead9',
+    iconColor: '#aebd6c',
 });
 // Mantiene la API notyf.success() / notyf.error() usada en todo el código
 const notyf = {
@@ -24,10 +24,10 @@ async function confirmDialog(title, text) {
         showCancelButton: true,
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#722f37',
-        cancelButtonColor: '#555',
-        background: '#1e1e1e',
-        color: '#e0e0e0',
+        confirmButtonColor: '#c4794f',
+        cancelButtonColor: '#3a3e2d',
+        background: '#232619',
+        color: '#ecead9',
         reverseButtons: true,
     });
     return r.isConfirmed;

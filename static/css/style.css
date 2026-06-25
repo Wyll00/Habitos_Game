@@ -1,11 +1,12 @@
 :root {
-    --bg-color: #121212;
-    --card-bg: #1e1e1e;
-    --text-main: #e0e0e0;
-    --text-muted: #888;
-    --accent-gold: #d4af37;
-    --accent-burgundy: #722f37;
-    --border-color: #333;
+    /* Paleta tierra / oliva */
+    --bg-color: #191b14;        /* fondo: verde-tierra muy oscuro */
+    --card-bg: #232619;         /* tarjetas: oliva oscuro */
+    --text-main: #ecead9;       /* texto: crema cálido */
+    --text-muted: #9a9c81;      /* texto apagado: salvia */
+    --accent-gold: #aebd6c;     /* acento principal: verde oliva */
+    --accent-burgundy: #c4794f; /* acento secundario: terracota */
+    --border-color: #3a3e2d;    /* bordes: oliva */
     --font-serif: 'Playfair Display', serif;
     --font-sans: 'Inter', sans-serif;
 }
