@@ -1,25 +1,37 @@
-// Inicializar Notyf
-const notyf = new Notyf({
-    duration: 3000,
-    position: { x: 'right', y: 'bottom' },
-    types: [
-        {
-            type: 'success',
-            background: 'var(--card-bg)',
-            icon: {
-                className: 'lucide lucide-check-circle-2',
-                tagName: 'i',
-                color: 'var(--accent-gold)'
-            },
-            className: 'notyf-custom'
-        },
-        {
-            type: 'error',
-            background: 'var(--card-bg)',
-            className: 'notyf-custom'
-        }
-    ]
+// Notificaciones con SweetAlert2 (estilo Códice)
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'bottom-end',
+    showConfirmButton: false,
+    timer: 2800,
+    timerProgressBar: true,
+    background: '#1e1e1e',
+    color: '#e0e0e0',
+    iconColor: '#d4af37',
 });
+// Mantiene la API notyf.success() / notyf.error() usada en todo el código
+const notyf = {
+    success: (msg) => Toast.fire({ icon: 'success', title: msg }),
+    error: (msg) => Toast.fire({ icon: 'error', title: msg }),
+};
+
+// Ventanita de confirmación centrada (para borrar). Devuelve true/false.
+async function confirmDialog(title, text) {
+    const r = await Swal.fire({
+        title: title,
+        text: text,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#722f37',
+        cancelButtonColor: '#555',
+        background: '#1e1e1e',
+        color: '#e0e0e0',
+        reverseButtons: true,
+    });
+    return r.isConfirmed;
+}
 
 // Tabs navigation
 function switchTab(tabId) {
@@ -301,7 +313,7 @@ function daysLabel(daysStr) {
 }
 
 async function deleteHabit(id, dateStr) {
-    if (!confirm('¿Eliminar esta tarea diaria? Se borrará para todos los días.')) return;
+    if (!(await confirmDialog('¿Eliminar esta tarea?', 'Se borrará para todos los días, junto con su historial.'))) return;
     try {
         const res = await fetch(`/api/habit/${id}`, { method: 'DELETE' });
         if (res.ok) {
@@ -722,7 +734,7 @@ async function submitMeal() {
 }
 
 async function deleteMeal(mealId) {
-    if(!confirm('¿Eliminar esta ración?')) return;
+    if(!(await confirmDialog('¿Eliminar esta ración?', 'Se quitará de tu registro del día.'))) return;
     try {
         const res = await fetch(`/api/meal/${mealId}`, { method: 'DELETE' });
         if(res.ok) {

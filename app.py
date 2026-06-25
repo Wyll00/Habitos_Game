@@ -289,6 +289,7 @@ def delete_habit(habit_id):
 
 # --- APIs Slider Semanal (Progreso Diario) ---
 @app.route('/api/week_slider', methods=['GET'])
+@app.route('/api/almanac/week', methods=['GET'])  # alias que usa el frontend
 def get_week_slider():
     today = date.today()
     start_date = today - timedelta(days=3)
