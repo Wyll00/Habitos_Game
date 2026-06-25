@@ -58,7 +58,10 @@
                     <i data-lucide="moon"></i> Visión Nocturna
                 </button>
                 {% if login_enabled %}
-                <a href="{{ url_for('logout') }}" class="btn-primary" style="width: 100%; background: transparent; border: 1px solid var(--accent-burgundy); color: var(--text-muted); display: flex; justify-content: center; align-items: center; gap: 0.5rem; text-decoration: none; margin-top: 0.6rem;">
+                <div style="text-align: center; color: var(--text-muted); font-size: 0.8rem; margin: 0.6rem 0 0.3rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                    <i data-lucide="user" style="width: 14px; height: 14px;"></i> {{ current_username }}
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn-primary" style="width: 100%; background: transparent; border: 1px solid var(--accent-burgundy); color: var(--text-muted); display: flex; justify-content: center; align-items: center; gap: 0.5rem; text-decoration: none;">
                     <i data-lucide="log-out"></i> Cerrar Sesión
                 </a>
                 {% endif %}

@@ -38,7 +38,7 @@
             font-size: 0.85rem;
             margin-bottom: 1.8rem;
         }
-        .login-card input[type="password"] {
+        .login-card input {
             width: 100%;
             padding: 0.8rem 1rem;
             background: var(--bg-color);
@@ -50,7 +50,7 @@
             margin-bottom: 1rem;
             outline: none;
         }
-        .login-card input[type="password"]:focus { border-color: var(--accent-gold); }
+        .login-card input:focus { border-color: var(--accent-gold); }
         .login-card button {
             width: 100%;
             padding: 0.85rem;
@@ -83,7 +83,8 @@
         <h1>Disciplina Integral</h1>
         <p class="sub">Acceso restringido</p>
         {% if error %}<div class="login-error">{{ error }}</div>{% endif %}
-        <input type="password" name="password" placeholder="Contraseña" autofocus required>
+        <input type="text" name="username" placeholder="Usuario" autofocus required autocomplete="username">
+        <input type="password" name="password" placeholder="Contraseña" required autocomplete="current-password">
         <button type="submit">Acceder</button>
     </form>
 </body>
