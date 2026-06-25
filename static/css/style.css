@@ -649,3 +649,67 @@ body {
 
 .meal-log-info h4 { margin-bottom: 0.2rem; }
 .meal-log-macros { font-size: 0.8rem; color: var(--text-muted); }
+
+/* ==================================
+   TAREAS DIARIAS: días + borrar
+=================================== */
+/* Selector de días en el modal de nueva tarea */
+.day-picker {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+.day-chip {
+    cursor: pointer;
+    user-select: none;
+}
+.day-chip input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.day-chip span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-weight: 600;
+    transition: all 0.15s ease;
+}
+.day-chip input:checked + span {
+    background: var(--accent-gold);
+    border-color: var(--accent-gold);
+    color: #121212;
+}
+
+/* Etiqueta de días junto al nombre de la tarea (cuando no es todos los días) */
+.habit-days {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--accent-gold);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 1px 6px;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+}
+
+/* Botón de borrar tarea */
+.delete-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.3rem;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s ease;
+}
+.delete-btn:hover { color: var(--accent-burgundy); }
+.delete-btn .lucide { width: 18px; height: 18px; }

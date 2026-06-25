@@ -5,6 +5,7 @@ import calendar
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from werkzeug.utils import secure_filename
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect
 from dotenv import load_dotenv
 
 # Carga el .env que está junto a este archivo (independiente del directorio actual)
@@ -45,6 +46,8 @@ class Habit(db.Model):
     description = db.Column(db.String(200))
     streak = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Días de la semana en que aplica: "0,1,2,3,4,5,6" (0=Lun ... 6=Dom)
+    days = db.Column(db.String(20), default='0,1,2,3,4,5,6')
 
 class HabitLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -129,8 +132,20 @@ def get_rank_info(xp):
             return {"name": name, "progress": progress, "xp": xp, "max_xp": max_xp}
     return {"name": "General de 5 Estrellas", "progress": 100, "xp": xp, "max_xp": xp}
 
+def ensure_schema():
+    """Migración ligera: añade columnas nuevas a tablas que ya existen."""
+    cols = [c['name'] for c in inspect(db.engine).get_columns('habit')]
+    if 'days' not in cols:
+        try:
+            db.session.execute(db.text(
+                "ALTER TABLE habit ADD COLUMN days VARCHAR(20) DEFAULT '0,1,2,3,4,5,6'"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
 with app.app_context():
     db.create_all()
+    ensure_schema()
 
 # ================= AUTENTICACIÓN =================
 @app.context_processor
@@ -197,23 +212,34 @@ def index():
     return render_template('index.html', today=today, entries=entries, profile=profile, challenges=challenges, rank_info=rank_info)
 
 # --- APIs Hábitos (Diarios) ---
+def habit_active_on(habit, target_date):
+    """True si el hábito aplica ese día: creado en/antes de la fecha y ese día de la semana."""
+    if habit.created_at.date() > target_date:
+        return False
+    days = (habit.days or '0,1,2,3,4,5,6').split(',')
+    return str(target_date.weekday()) in days
+
 @app.route('/api/habits/<date_str>', methods=['GET'])
 def get_habits(date_str):
     target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     habits = Habit.query.all()
     res = []
     for h in habits:
-        # Solo mostramos hábitos creados en o antes de esta fecha
-        if h.created_at.date() <= target_date:
+        if habit_active_on(h, target_date):
             log = HabitLog.query.filter_by(habit_id=h.id, date=target_date).first()
             is_completed = log.completed if log else False
-            res.append({'id': h.id, 'name': h.name, 'description': h.description, 'streak': h.streak, 'completed': is_completed})
+            res.append({'id': h.id, 'name': h.name, 'description': h.description,
+                        'streak': h.streak, 'completed': is_completed, 'days': h.days})
     return jsonify(res)
 
 @app.route('/api/habit/new', methods=['POST'])
 def new_habit():
     data = request.json
-    h = Habit(name=data['name'], description=data.get('description', ''))
+    # Días seleccionados (0=Lun ... 6=Dom); si no llegan, todos los días
+    raw = data.get('days') or '0,1,2,3,4,5,6'
+    valid = [t for t in str(raw).split(',') if t in {'0', '1', '2', '3', '4', '5', '6'}]
+    days = ','.join(valid) if valid else '0,1,2,3,4,5,6'
+    h = Habit(name=data['name'], description=data.get('description', ''), days=days)
     db.session.add(h)
     db.session.commit()
     return jsonify({'success': True})
@@ -252,6 +278,15 @@ def toggle_habit(habit_id, date_str):
     
     return jsonify({'success': True, 'completed': log.completed, 'streak': h.streak, 'new_xp': profile.xp if profile else 0, 'rank_info': rank_info})
 
+@app.route('/api/habit/<int:habit_id>', methods=['DELETE'])
+def delete_habit(habit_id):
+    h = Habit.query.get_or_404(habit_id)
+    # Borra también su historial para no dejar registros huérfanos
+    HabitLog.query.filter_by(habit_id=habit_id).delete()
+    db.session.delete(h)
+    db.session.commit()
+    return jsonify({'success': True})
+
 # --- APIs Slider Semanal (Progreso Diario) ---
 @app.route('/api/week_slider', methods=['GET'])
 def get_week_slider():
@@ -265,7 +300,7 @@ def get_week_slider():
         current_date = start_date + timedelta(days=i)
         
         # Calcular progreso de Hábitos Diarios para esta fecha
-        habits = [h for h in Habit.query.all() if h.created_at.date() <= current_date]
+        habits = [h for h in Habit.query.all() if habit_active_on(h, current_date)]
         total = len(habits)
         
         completed = 0
@@ -448,7 +483,7 @@ def get_almanac_month(year, month):
         current_date = date(year, month, day)
         
         # Calcular progreso de Hábitos Diarios para esta fecha
-        habits = [h for h in Habit.query.all() if h.created_at.date() <= current_date]
+        habits = [h for h in Habit.query.all() if habit_active_on(h, current_date)]
         total = len(habits)
         
         completed = 0

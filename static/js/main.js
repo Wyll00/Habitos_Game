@@ -153,14 +153,16 @@ async function submitHabit(event) {
     event.preventDefault();
     const nameInput = document.getElementById('habit-name');
     const descInput = document.getElementById('habit-desc');
-    
+    const days = Array.from(document.querySelectorAll('.habit-day-cb:checked')).map(cb => cb.value).join(',');
+
     try {
         const response = await fetch('/api/habit/new', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 name: nameInput.value,
-                description: descInput.value
+                description: descInput.value,
+                days: days
             })
         });
 
@@ -169,6 +171,7 @@ async function submitHabit(event) {
             closeModal('habit-modal');
             nameInput.value = '';
             descInput.value = '';
+            document.querySelectorAll('.habit-day-cb').forEach(cb => cb.checked = true);
             const currentDate = document.getElementById('calendar-date').value;
             loadHabitsForDate(currentDate);
             loadWeekSlider();
@@ -289,6 +292,30 @@ function selectDate(dateStr) {
     loadHabitsForDate(dateStr);
 }
 
+const DAY_LETTERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+function daysLabel(daysStr) {
+    if (!daysStr) return '';
+    const arr = daysStr.split(',').filter(x => x !== '');
+    if (arr.length === 7) return ''; // todos los días -> no mostrar etiqueta
+    return arr.map(d => DAY_LETTERS[parseInt(d)]).join('·');
+}
+
+async function deleteHabit(id, dateStr) {
+    if (!confirm('¿Eliminar esta tarea diaria? Se borrará para todos los días.')) return;
+    try {
+        const res = await fetch(`/api/habit/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            notyf.success('Tarea eliminada');
+            loadHabitsForDate(dateStr);
+            loadWeekSlider();
+        } else {
+            notyf.error('No se pudo eliminar');
+        }
+    } catch (e) {
+        notyf.error('Error al eliminar');
+    }
+}
+
 async function loadHabitsForDate(dateStr) {
     const list = document.getElementById('habits-list');
     if (!list) return;
@@ -312,11 +339,13 @@ async function loadHabitsForDate(dateStr) {
                 const completedClass = h.completed ? 'completed' : '';
                 const emptyCircle = h.completed ? '' : '<span class="empty-circle"></span>';
                 const checkHTML = h.completed ? `<i data-lucide="${checkedIcon}" class="icon-check" style="color: var(--accent-gold);"></i>` : emptyCircle;
-                
+                const dl = daysLabel(h.days);
+                const daysHTML = dl ? `<span class="habit-days">${dl}</span>` : '';
+
                 list.innerHTML += `
                 <div class="habit-card ${completedClass}" data-habit-id="${h.id}">
                     <div class="habit-content">
-                        <h3 class="habit-name">${h.name}</h3>
+                        <h3 class="habit-name">${h.name} ${daysHTML}</h3>
                         <p class="habit-desc">${h.description}</p>
                     </div>
                     <div class="habit-actions">
@@ -325,6 +354,9 @@ async function loadHabitsForDate(dateStr) {
                         </div>
                         <button class="toggle-btn" onclick="toggleHabit(${h.id}, '${dateStr}')">
                             ${checkHTML}
+                        </button>
+                        <button class="delete-btn" title="Eliminar tarea" onclick="deleteHabit(${h.id}, '${dateStr}')">
+                            <i data-lucide="trash-2"></i>
                         </button>
                     </div>
                 </div>`;

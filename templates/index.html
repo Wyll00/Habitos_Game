@@ -433,6 +433,19 @@
                     <label for="habit-desc">Descripción (Opcional)</label>
                     <input type="text" id="habit-desc" placeholder="Razón o detalle">
                 </div>
+                <div class="form-group">
+                    <label>¿Qué días?</label>
+                    <div class="day-picker">
+                        <label class="day-chip"><input type="checkbox" class="habit-day-cb" value="0" checked><span>L</span></label>
+                        <label class="day-chip"><input type="checkbox" class="habit-day-cb" value="1" checked><span>M</span></label>
+                        <label class="day-chip"><input type="checkbox" class="habit-day-cb" value="2" checked><span>X</span></label>
+                        <label class="day-chip"><input type="checkbox" class="habit-day-cb" value="3" checked><span>J</span></label>
+                        <label class="day-chip"><input type="checkbox" class="habit-day-cb" value="4" checked><span>V</span></label>
+                        <label class="day-chip"><input type="checkbox" class="habit-day-cb" value="5" checked><span>S</span></label>
+                        <label class="day-chip"><input type="checkbox" class="habit-day-cb" value="6" checked><span>D</span></label>
+                    </div>
+                    <small style="color: var(--text-muted);">Por defecto, todos los días. Desmarca los que no quieras.</small>
+                </div>
                 <button type="submit" class="btn-primary btn-block">Aceptar Misión</button>
             </form>
         </div>
