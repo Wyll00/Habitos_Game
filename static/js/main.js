@@ -105,41 +105,6 @@ window.onclick = function(event) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Load Night Mode setting
-    const isNight = localStorage.getItem('nightMode') === 'true';
-    if(isNight) {
-        document.body.classList.add('night-mode');
-        const btn = document.getElementById('night-mode-toggle');
-        if(btn) {
-            btn.innerHTML = '<i data-lucide="sun"></i> Visión Diurna';
-            btn.style.color = 'var(--text-main)';
-            btn.style.borderColor = 'var(--text-main)';
-        }
-    }
-});
-
-// Night Mode Toggle
-function toggleNightMode() {
-    document.body.classList.toggle('night-mode');
-    const isNight = document.body.classList.contains('night-mode');
-    localStorage.setItem('nightMode', isNight);
-    
-    const btn = document.getElementById('night-mode-toggle');
-    if(btn) {
-        if(isNight) {
-            btn.innerHTML = '<i data-lucide="sun"></i> Visión Diurna';
-            btn.style.color = 'var(--text-main)';
-            btn.style.borderColor = 'var(--text-main)';
-        } else {
-            btn.innerHTML = '<i data-lucide="moon"></i> Visión Nocturna';
-            btn.style.color = 'var(--text-muted)';
-            btn.style.borderColor = 'var(--border-color)';
-        }
-        lucide.createIcons();
-    }
-}
-
 // Actualizar el nombre del archivo seleccionado (Bitácora)
 document.getElementById('entry-image')?.addEventListener('change', function(e) {
     const fileName = e.target.files[0]?.name;
