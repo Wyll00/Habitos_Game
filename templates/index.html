@@ -549,7 +549,12 @@
                 <h2>Registrar Nuevo Alimento Base</h2>
                 <button class="close-btn" onclick="closeModal('new-food-modal')">&times;</button>
             </div>
-            <p style="color:var(--text-muted); margin-bottom:1rem; font-size:0.9rem;">Introduce los valores nutricionales por cada 100g.</p>
+            <p style="color:var(--text-muted); margin-bottom:1rem; font-size:0.9rem;">Busca un alimento y se rellena solo, o introduce los valores a mano (por 100g).</p>
+            <div style="display:flex; gap:0.5rem; margin-bottom:0.6rem;">
+                <input type="text" id="food-search-input" class="input-field" placeholder="Buscar alimento (ej. plátano, atún)..." style="margin-bottom:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();searchFood();}">
+                <button type="button" class="btn-primary" style="white-space:nowrap; padding:0 1.1rem;" onclick="searchFood()"><i data-lucide="search"></i></button>
+            </div>
+            <div id="food-search-results"></div>
             <form onsubmit="submitNewFood(event)">
                 <input type="text" id="new-food-name" class="input-field" placeholder="Nombre (ej. Pollo a la plancha)" required>
                 <div style="display:flex; gap:1rem;">

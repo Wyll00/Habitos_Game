@@ -870,6 +870,49 @@ async function submitNewFood(event) {
     } catch(e) { notyf.error("Error al guardar alimento"); }
 }
 
+// --- Buscador de alimentos (Open Food Facts) ---
+let foodSearchResults = [];
+
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function searchFood() {
+    const q = document.getElementById('food-search-input').value.trim();
+    const box = document.getElementById('food-search-results');
+    if (!q) return;
+    box.innerHTML = '<p style="color:var(--text-muted); padding:0.5rem; font-size:0.85rem;">Buscando...</p>';
+    try {
+        const res = await fetch('/api/food/search?q=' + encodeURIComponent(q));
+        const list = await res.json();
+        if (!Array.isArray(list) || list.length === 0) {
+            box.innerHTML = '<p style="color:var(--text-muted); padding:0.5rem; font-size:0.85rem;">Sin resultados. Prueba otro nombre o mételo a mano.</p>';
+            return;
+        }
+        foodSearchResults = list;
+        box.innerHTML = list.map((f, i) => `
+            <div class="food-result" onclick="pickFood(${i})">
+                <div class="food-result-name">${escapeHtml(f.name)}${f.brand ? ` <small>· ${escapeHtml(f.brand)}</small>` : ''}</div>
+                <div class="food-result-macros">${f.calories} kcal · P${f.protein} · C${f.carbs} · G${f.fats}</div>
+            </div>`).join('');
+    } catch (e) {
+        box.innerHTML = '<p style="color:var(--accent-burgundy); padding:0.5rem; font-size:0.85rem;">Error al buscar. Inténtalo de nuevo.</p>';
+    }
+}
+
+function pickFood(i) {
+    const f = foodSearchResults[i];
+    if (!f) return;
+    document.getElementById('new-food-name').value = f.name;
+    document.getElementById('new-food-cal').value = f.calories;
+    document.getElementById('new-food-pro').value = f.protein;
+    document.getElementById('new-food-carb').value = f.carbs;
+    document.getElementById('new-food-fat').value = f.fats;
+    document.getElementById('food-search-results').innerHTML = '';
+    document.getElementById('food-search-input').value = '';
+    notyf.success('Valores rellenados. Revisa y guarda.');
+}
+
 async function submitMeal() {
     const foodId = document.getElementById('food-select').value;
     const quantity = document.getElementById('meal-quantity').value;

@@ -2,6 +2,9 @@ import os
 import secrets
 from datetime import datetime, date, timedelta
 import calendar
+import json
+import urllib.request
+import urllib.parse
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_from_directory
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -737,6 +740,50 @@ def add_food():
         return jsonify({'success': True, 'id': f.id})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/api/food/search', methods=['GET'])
+def food_search():
+    """Busca alimentos en Open Food Facts y devuelve macros por 100g."""
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify([])
+    params = urllib.parse.urlencode({
+        'q': q, 'page_size': 15, 'fields': 'product_name,brands,nutriments',
+    })
+    url = 'https://search.openfoodfacts.org/search?' + params
+    headers = {'User-Agent': 'SistemaCMS-Habitos/1.0 (williamluisgonzalez@gmail.com)'}
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=8) as r:
+            data = json.loads(r.read().decode('utf-8'))
+    except Exception:
+        return jsonify({'error': 'buscador no disponible'}), 502
+    results = []
+    for p in data.get('hits', []):
+        name = (p.get('product_name') or '').strip()
+        n = p.get('nutriments') or {}
+        cal = n.get('energy-kcal_100g')
+        if not name or cal is None:
+            continue
+        brands = p.get('brands')
+        if isinstance(brands, list):
+            brand = brands[0] if brands else ''
+        else:
+            brand = (brands or '').split(',')[0]
+        try:
+            results.append({
+                'name': name[:120],
+                'brand': str(brand).strip()[:60],
+                'calories': round(float(cal), 1),
+                'protein': round(float(n.get('proteins_100g') or 0), 1),
+                'carbs': round(float(n.get('carbohydrates_100g') or 0), 1),
+                'fats': round(float(n.get('fat_100g') or 0), 1),
+            })
+        except (ValueError, TypeError):
+            continue
+        if len(results) >= 8:
+            break
+    return jsonify(results)
 
 @app.route('/api/meals/<date_str>', methods=['GET'])
 def get_meals(date_str):

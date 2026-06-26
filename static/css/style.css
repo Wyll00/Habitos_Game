@@ -918,3 +918,20 @@ body {
 .lb-metrics span { display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: var(--text-muted); }
 .lb-metrics b { color: var(--text-main); font-size: 1.1rem; }
 .lb-metrics .lb-hl b { color: var(--accent-gold); }
+
+/* ==================================
+   BUSCADOR DE ALIMENTOS
+=================================== */
+#food-search-results { max-height: 240px; overflow-y: auto; margin-bottom: 0.8rem; }
+.food-result {
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 0.4rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.food-result:hover { border-color: var(--accent-gold); background: rgba(174, 189, 108, 0.06); }
+.food-result-name { color: var(--text-main); font-size: 0.9rem; }
+.food-result-name small { color: var(--text-muted); }
+.food-result-macros { color: var(--accent-gold); font-size: 0.76rem; margin-top: 0.2rem; }
