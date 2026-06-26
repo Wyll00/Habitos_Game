@@ -33,6 +33,20 @@ async function confirmDialog(title, text) {
     return r.isConfirmed;
 }
 
+// Menú lateral deslizante (móvil)
+function toggleSidebar() {
+    const sb = document.querySelector('.sidebar');
+    const ov = document.querySelector('.sidebar-overlay');
+    if (sb) sb.classList.toggle('open');
+    if (ov) ov.classList.toggle('show');
+}
+function closeSidebar() {
+    const sb = document.querySelector('.sidebar');
+    const ov = document.querySelector('.sidebar-overlay');
+    if (sb) sb.classList.remove('open');
+    if (ov) ov.classList.remove('show');
+}
+
 // Tabs navigation
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -49,7 +63,9 @@ function switchTab(tabId) {
         const btn = document.querySelector(`.nav-btn[onclick="switchTab('${tabId}')"]`);
         if(btn) btn.classList.add('active');
     }
-    
+
+    closeSidebar(); // cerrar el menú lateral en móvil al cambiar de sección
+
     // Si se abre la pestaña de estadísticas, cargar los datos
     if (tabId === 'stats') {
         loadStatistics();

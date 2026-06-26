@@ -704,3 +704,97 @@ body {
 }
 .delete-btn:hover { color: var(--accent-burgundy); }
 .delete-btn .lucide { width: 18px; height: 18px; }
+
+/* ==================================
+   RESPONSIVE (móvil / tablet)
+=================================== */
+.mobile-topbar { display: none; }
+.sidebar-overlay { display: none; }
+
+@media (max-width: 820px) {
+    .app-layout {
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
+    }
+
+    /* La barra lateral pasa a ser un cajón deslizante */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 78%;
+        max-width: 300px;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 1000;
+        overflow-y: auto;
+    }
+    .sidebar.open { transform: translateX(0); }
+
+    /* Capa oscura detrás del cajón abierto */
+    .sidebar-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease;
+        z-index: 999;
+    }
+    .sidebar-overlay.show { opacity: 1; visibility: visible; }
+
+    /* Barra superior con botón hamburguesa */
+    .mobile-topbar {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        position: sticky;
+        top: 0;
+        z-index: 500;
+        margin: -1rem -1rem 1rem;
+        padding: 0.8rem 1rem;
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+    }
+    .hamburger {
+        background: transparent;
+        border: none;
+        color: var(--accent-gold);
+        cursor: pointer;
+        display: flex;
+        padding: 0.2rem;
+    }
+    .hamburger .lucide { width: 26px; height: 26px; }
+    .mobile-title {
+        font-family: var(--font-serif);
+        color: var(--accent-gold);
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .main-content {
+        padding: 1rem;
+        overflow-y: visible;
+    }
+    .container { max-width: 100%; }
+
+    /* Modales: que no se salgan en vertical y con menos relleno */
+    .modal-content {
+        padding: 1.5rem;
+        max-height: 88vh;
+        overflow-y: auto;
+    }
+    .close-btn { right: 1rem; top: 1rem; }
+}
+
+@media (max-width: 420px) {
+    .main-content { padding: 0.8rem; }
+    .calendar-grid { gap: 3px; }
+    .calendar-day-num { font-size: 0.72rem; }
+    .habit-name { font-size: 1rem; }
+}
