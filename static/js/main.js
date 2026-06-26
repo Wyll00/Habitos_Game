@@ -77,6 +77,9 @@ function switchTab(tabId) {
     if (tabId === 'stats') {
         loadStatistics();
     }
+    if (tabId === 'leaderboard') {
+        loadLeaderboard();
+    }
     if (tabId === 'objectives') {
         loadObjectives();
     }
@@ -678,6 +681,47 @@ function renderNutritionChart(nut) {
             plugins: { legend: { labels: { color: '#ecead9' } } }
         }
     });
+}
+
+// ================= CLASIFICACIÓN (RANKING) =================
+let leaderboardData = [];
+let leaderboardSort = 'xp';
+
+async function loadLeaderboard() {
+    try {
+        const res = await fetch('/api/leaderboard');
+        leaderboardData = await res.json();
+        renderLeaderboard();
+    } catch (e) {
+        console.error('Error cargando la clasificación', e);
+    }
+}
+
+function sortLeaderboard(key, btn) {
+    leaderboardSort = key;
+    document.querySelectorAll('.lb-sort-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderLeaderboard();
+}
+
+function renderLeaderboard() {
+    const el = document.getElementById('leaderboard');
+    if (!el) return;
+    const sorted = [...leaderboardData].sort((a, b) => b[leaderboardSort] - a[leaderboardSort]);
+    const medals = ['🥇', '🥈', '🥉'];
+    el.innerHTML = sorted.map((u, i) => `
+        <div class="lb-row ${u.is_me ? 'lb-me' : ''}">
+            <div class="lb-pos">${i < 3 ? medals[i] : (i + 1)}</div>
+            <div class="lb-user">
+                <span class="lb-name">${u.username}${u.is_me ? ' (tú)' : ''}</span>
+                <span class="lb-rank">${u.rank}</span>
+            </div>
+            <div class="lb-metrics">
+                <span class="${leaderboardSort === 'xp' ? 'lb-hl' : ''}"><b>${u.xp}</b><small>XP</small></span>
+                <span class="${leaderboardSort === 'best_streak' ? 'lb-hl' : ''}"><b>${u.best_streak}</b><small>racha</small></span>
+                <span class="${leaderboardSort === 'completed' ? 'lb-hl' : ''}"><b>${u.completed}</b><small>hechos</small></span>
+            </div>
+        </div>`).join('');
 }
 
 // ================= ALMANAQUE MENSUAL =================

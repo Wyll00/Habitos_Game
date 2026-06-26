@@ -542,6 +542,32 @@ def get_stats():
         'challenges': {'active': active_challenges, 'completed': completed_challenges}
     })
 
+@app.route('/api/leaderboard', methods=['GET'])
+def leaderboard():
+    users = User.query.all()
+    xp_by = {p.user_id: p.xp for p in UserProfile.query.all()}
+    completed_by = dict(db.session.query(HabitLog.user_id, db.func.count(HabitLog.id))
+                        .filter(HabitLog.completed.is_(True))
+                        .group_by(HabitLog.user_id).all())
+    streak_by = dict(db.session.query(Habit.user_id, db.func.max(Habit.streak))
+                     .group_by(Habit.user_id).all())
+    habits_by = dict(db.session.query(Habit.user_id, db.func.count(Habit.id))
+                     .group_by(Habit.user_id).all())
+    me = current_uid()
+    rows = []
+    for u in users:
+        xp = xp_by.get(u.id, 0) or 0
+        rows.append({
+            'username': u.username,
+            'is_me': u.id == me,
+            'xp': xp,
+            'rank': get_rank_info(xp)['name'],
+            'best_streak': streak_by.get(u.id, 0) or 0,
+            'completed': completed_by.get(u.id, 0) or 0,
+            'habits': habits_by.get(u.id, 0) or 0,
+        })
+    return jsonify(rows)
+
 @app.route('/api/stats/advanced', methods=['GET'])
 def get_stats_advanced():
     uid = current_uid()

@@ -878,3 +878,43 @@ body {
     background: rgba(174, 189, 108, 0.08);
 }
 .badge.locked { color: var(--text-muted); opacity: 0.5; }
+
+/* ==================================
+   CLASIFICACIÓN (RANKING)
+=================================== */
+.lb-sort { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.lb-sort-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+.lb-sort-btn.active {
+    background: rgba(174, 189, 108, 0.12);
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+}
+.lb-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 0.6rem;
+    background: var(--card-bg);
+}
+.lb-row.lb-me { border-color: var(--accent-gold); background: rgba(174, 189, 108, 0.07); }
+.lb-pos { font-size: 1.4rem; font-weight: 700; min-width: 38px; text-align: center; color: var(--text-muted); }
+.lb-user { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.lb-name { font-weight: 600; color: var(--text-main); }
+.lb-rank { font-size: 0.78rem; color: var(--accent-gold); }
+.lb-metrics { display: flex; gap: 1.3rem; }
+.lb-metrics span { display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: var(--text-muted); }
+.lb-metrics b { color: var(--text-main); font-size: 1.1rem; }
+.lb-metrics .lb-hl b { color: var(--accent-gold); }

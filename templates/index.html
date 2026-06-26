@@ -53,6 +53,9 @@
                 <button class="nav-btn" onclick="switchTab('stats')">
                     <i data-lucide="bar-chart-2"></i> Estadísticas
                 </button>
+                <button class="nav-btn" onclick="switchTab('leaderboard')">
+                    <i data-lucide="trophy"></i> Clasificación
+                </button>
                 <button class="nav-btn" onclick="switchTab('nutrition')">
                     <i data-lucide="apple"></i> Logística (Nutrición)
                 </button>
@@ -296,6 +299,20 @@
                     <div style="position: relative; height: 240px;"><canvas id="nutritionChart"></canvas></div>
                 </div>
             </main>
+        </div>
+
+        <!-- SECCIÓN: CLASIFICACIÓN -->
+        <div id="leaderboard-section" class="tab-content">
+            <header class="dashboard-header">
+                <h2>Clasificación</h2>
+                <p class="date">Pique sano entre comandantes</p>
+            </header>
+            <div class="lb-sort">
+                <button class="lb-sort-btn active" onclick="sortLeaderboard('xp', this)">XP</button>
+                <button class="lb-sort-btn" onclick="sortLeaderboard('best_streak', this)">Mejor racha</button>
+                <button class="lb-sort-btn" onclick="sortLeaderboard('completed', this)">Completados</button>
+            </div>
+            <div id="leaderboard"></div>
         </div>
 
         <!-- SECCIÓN: NUTRICIÓN -->
