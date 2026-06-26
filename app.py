@@ -528,6 +528,126 @@ def get_stats():
         'challenges': {'active': active_challenges, 'completed': completed_challenges}
     })
 
+@app.route('/api/stats/advanced', methods=['GET'])
+def get_stats_advanced():
+    uid = current_uid()
+    today = date.today()
+    habits = Habit.query.filter_by(user_id=uid).all()
+    profile = get_or_create_profile()
+    weekday_names = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+
+    # --- Progreso diario del último año (tendencia + mapa de calor) ---
+    year_start = today - timedelta(days=364)
+    done_by_date = {}
+    for l in HabitLog.query.filter(HabitLog.user_id == uid,
+                                   HabitLog.date >= year_start,
+                                   HabitLog.completed.is_(True)).all():
+        done_by_date.setdefault(l.date, set()).add(l.habit_id)
+    daily = []
+    for i in range(365):
+        d = year_start + timedelta(days=i)
+        active = [h for h in habits if habit_active_on(h, d)]
+        total = len(active)
+        done = done_by_date.get(d, set())
+        completed = sum(1 for h in active if h.id in done)
+        daily.append({'date': d.isoformat(),
+                      'progress': int((completed / total) * 100) if total else 0,
+                      'total': total})
+
+    # --- Ficha por hábito (totales y rachas históricas) ---
+    done_dates_by_habit = {}
+    for l in HabitLog.query.filter(HabitLog.user_id == uid, HabitLog.completed.is_(True)).all():
+        done_dates_by_habit.setdefault(l.habit_id, set()).add(l.date)
+    habits_detail = []
+    total_completions = 0
+    for h in habits:
+        done_dates = done_dates_by_habit.get(h.id, set())
+        total_done = len(done_dates)
+        total_completions += total_done
+        start = max(h.created_at.date(), today - timedelta(days=365))
+        active_days = 0
+        wd_active = [0] * 7
+        wd_done = [0] * 7
+        best_streak = cur_streak = 0
+        d = start
+        while d <= today:
+            if habit_active_on(h, d):
+                active_days += 1
+                wd = d.weekday()
+                wd_active[wd] += 1
+                if d in done_dates:
+                    wd_done[wd] += 1
+                    cur_streak += 1
+                    best_streak = max(best_streak, cur_streak)
+                elif d != today:   # el día de hoy todavía no rompe la racha
+                    cur_streak = 0
+            d += timedelta(days=1)
+        best_wd, best_ratio = None, -1.0
+        for wd in range(7):
+            if wd_active[wd] and wd_done[wd] / wd_active[wd] > best_ratio:
+                best_ratio = wd_done[wd] / wd_active[wd]
+                best_wd = wd
+        habits_detail.append({
+            'name': h.name,
+            'consistency': int((total_done / active_days) * 100) if active_days else 0,
+            'current_streak': cur_streak,
+            'best_streak': best_streak,
+            'total': total_done,
+            'best_day': weekday_names[best_wd] if best_wd is not None else '—',
+        })
+
+    # --- Logros / medallas ---
+    best_overall = max((hd['best_streak'] for hd in habits_detail), default=0)
+    objectives_done = Objective.query.filter_by(user_id=uid, completed=True).count()
+    challenges_won = Challenge.query.filter_by(user_id=uid, is_active=False).count()
+    meals_count = MealLog.query.filter_by(user_id=uid).count()
+    defs = [
+        ('Primer paso', 'Crea tu primer hábito', len(habits) >= 1, 'flag'),
+        ('Constante', 'Mantén una racha de 7 días', best_overall >= 7, 'flame'),
+        ('Inquebrantable', 'Mantén una racha de 30 días', best_overall >= 30, 'zap'),
+        ('Centurión', 'Completa 100 hábitos en total', total_completions >= 100, 'award'),
+        ('Estratega', 'Completa un objetivo', objectives_done >= 1, 'target'),
+        ('Voluntad de hierro', 'Gana un reto', challenges_won >= 1, 'swords'),
+        ('Logística', 'Registra 10 comidas', meals_count >= 10, 'apple'),
+        ('Veterano', 'Alcanza 1000 XP', profile.xp >= 1000, 'star'),
+    ]
+    achievements = [{'name': n, 'desc': de, 'unlocked': bool(u), 'icon': ic} for n, de, u, ic in defs]
+
+    # --- Tendencia de nutrición (14 días) ---
+    nut_start = today - timedelta(days=13)
+    by_date = {}
+    for m in MealLog.query.filter(MealLog.user_id == uid,
+                                  MealLog.date >= nut_start, MealLog.date <= today).all():
+        f = m.food
+        factor = m.quantity / 100.0
+        e = by_date.setdefault(m.date, {'calories': 0.0, 'protein': 0.0, 'carbs': 0.0, 'fats': 0.0})
+        e['calories'] += f.calories * factor
+        e['protein'] += f.protein * factor
+        e['carbs'] += f.carbs * factor
+        e['fats'] += f.fats * factor
+    nutrition_days = []
+    days_on_target = 0
+    for i in range(14):
+        d = nut_start + timedelta(days=i)
+        e = by_date.get(d, {'calories': 0, 'protein': 0, 'carbs': 0, 'fats': 0})
+        cal = round(e['calories'])
+        nutrition_days.append({'date': d.isoformat(), 'calories': cal, 'protein': round(e['protein']),
+                               'carbs': round(e['carbs']), 'fats': round(e['fats'])})
+        if cal > 0 and abs(cal - profile.target_calories) <= profile.target_calories * 0.1:
+            days_on_target += 1
+
+    return jsonify({
+        'daily': daily,
+        'habits_detail': habits_detail,
+        'achievements': achievements,
+        'nutrition': {
+            'days': nutrition_days,
+            'targets': {'calories': profile.target_calories, 'protein': profile.target_protein,
+                        'carbs': profile.target_carbs, 'fats': profile.target_fats},
+            'days_on_target': days_on_target,
+        },
+    })
+
 # --- APIs Almanaque (Calendario Mensual) ---
 @app.route('/api/almanac/month/<int:year>/<int:month>', methods=['GET'])
 def get_almanac_month(year, month):

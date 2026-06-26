@@ -537,11 +537,140 @@ async function loadStatistics() {
                 }
             }
         });
-        
+
+        loadAdvancedStats();   // gráficas avanzadas, mapa de calor, logros, nutrición
+
     } catch (e) {
         console.error("Error cargando estadísticas", e);
         notyf.error("No se pudieron cargar las estadísticas");
     }
+}
+
+// ================= ESTADÍSTICAS AVANZADAS =================
+let trendChartInstance = null;
+let nutritionChartInstance = null;
+
+async function loadAdvancedStats() {
+    try {
+        const res = await fetch('/api/stats/advanced');
+        const data = await res.json();
+        renderTrendChart(data.daily);
+        renderHeatmap(data.daily);
+        renderHabitsDetail(data.habits_detail);
+        renderAchievements(data.achievements);
+        renderNutritionChart(data.nutrition);
+    } catch (e) {
+        console.error('Error en estadísticas avanzadas', e);
+    }
+}
+
+function renderTrendChart(daily) {
+    const last30 = daily.slice(-30);
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    if (trendChartInstance) trendChartInstance.destroy();
+    trendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: last30.map(d => d.date.slice(5)),
+            datasets: [{
+                label: '% completado', data: last30.map(d => d.progress),
+                borderColor: '#aebd6c', backgroundColor: 'rgba(174,189,108,0.15)',
+                fill: true, tension: 0.3, pointRadius: 2
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                y: { min: 0, max: 100, ticks: { color: '#9a9c81' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                x: { ticks: { color: '#9a9c81', maxTicksLimit: 8 }, grid: { display: false } }
+            },
+            plugins: { legend: { labels: { color: '#ecead9' } } }
+        }
+    });
+}
+
+function renderHeatmap(daily) {
+    const el = document.getElementById('heatmap');
+    el.innerHTML = '';
+    if (daily.length) {
+        const firstWd = new Date(daily[0].date + 'T00:00:00').getDay(); // 0=Dom
+        const offset = (firstWd + 6) % 7; // 0=Lun arriba
+        for (let i = 0; i < offset; i++) {
+            const pad = document.createElement('div');
+            pad.className = 'hm-cell hm-pad';
+            el.appendChild(pad);
+        }
+    }
+    daily.forEach(d => {
+        const cell = document.createElement('div');
+        cell.className = 'hm-cell';
+        if (d.total > 0 && d.progress > 0) {
+            const op = (0.25 + (d.progress / 100) * 0.75).toFixed(2);
+            cell.style.background = `rgba(174,189,108,${op})`;
+        }
+        cell.title = `${d.date}: ${d.progress}%`;
+        el.appendChild(cell);
+    });
+}
+
+function renderHabitsDetail(list) {
+    const el = document.getElementById('habits-detail');
+    if (!list.length) {
+        el.innerHTML = '<p style="color: var(--text-muted);">Aún no tienes hábitos que analizar.</p>';
+        return;
+    }
+    el.innerHTML = list.map(h => `
+        <div class="habit-stat-row">
+            <div class="habit-stat-name">${h.name}</div>
+            <div class="habit-stat-metrics">
+                <span><b>${h.consistency}%</b><small>constancia</small></span>
+                <span><b>${h.current_streak}</b><small>racha</small></span>
+                <span><b>${h.best_streak}</b><small>mejor</small></span>
+                <span><b>${h.total}</b><small>total</small></span>
+                <span><b>${h.best_day}</b><small>mejor día</small></span>
+            </div>
+        </div>`).join('');
+}
+
+function renderAchievements(list) {
+    const el = document.getElementById('achievements');
+    el.innerHTML = list.map(a => `
+        <div class="badge ${a.unlocked ? 'unlocked' : 'locked'}" title="${a.desc}">
+            <i data-lucide="${a.unlocked ? a.icon : 'lock'}"></i>
+            <span>${a.name}</span>
+        </div>`).join('');
+    if (window.lucide) lucide.createIcons();
+}
+
+function renderNutritionChart(nut) {
+    const onT = document.getElementById('nutrition-on-target');
+    if (onT) onT.textContent = `· ${nut.days_on_target} días en el objetivo`;
+    const ctx = document.getElementById('nutritionChart').getContext('2d');
+    if (nutritionChartInstance) nutritionChartInstance.destroy();
+    nutritionChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: nut.days.map(d => d.date.slice(5)),
+            datasets: [
+                {
+                    type: 'bar', label: 'Calorías', data: nut.days.map(d => d.calories),
+                    backgroundColor: 'rgba(174,189,108,0.55)', borderColor: '#aebd6c', borderWidth: 1
+                },
+                {
+                    type: 'line', label: 'Objetivo', data: nut.days.map(() => nut.targets.calories),
+                    borderColor: '#c4794f', borderWidth: 2, pointRadius: 0, fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { color: '#9a9c81' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                x: { ticks: { color: '#9a9c81', maxTicksLimit: 7 }, grid: { display: false } }
+            },
+            plugins: { legend: { labels: { color: '#ecead9' } } }
+        }
+    });
 }
 
 // ================= ALMANAQUE MENSUAL =================
