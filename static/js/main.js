@@ -1,3 +1,10 @@
+// Registrar el service worker (PWA instalable)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+}
+
 // Notificaciones con SweetAlert2 (estilo Códice)
 const Toast = Swal.mixin({
     toast: true,

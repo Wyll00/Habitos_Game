@@ -2,7 +2,7 @@ import os
 import secrets
 from datetime import datetime, date, timedelta
 import calendar
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_from_directory
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
@@ -14,6 +14,11 @@ load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
+
+# MIME types correctos para la PWA (independiente del sistema operativo)
+import mimetypes
+mimetypes.add_type('application/manifest+json', '.webmanifest')
+mimetypes.add_type('application/javascript', '.js')
 
 # Base de datos: si existe DATABASE_URL (Supabase/Postgres) la usa; si no, SQLite local.
 database_url = os.environ.get('DATABASE_URL')
@@ -214,8 +219,8 @@ def inject_auth():
 
 @app.before_request
 def require_login():
-    # Deja pasar siempre los estáticos y la propia página de login
-    if request.endpoint in ('login', 'static'):
+    # Deja pasar siempre los estáticos, el service worker y la página de login
+    if request.endpoint in ('login', 'static', 'service_worker'):
         return
     if not session.get('user_id'):
         return redirect(url_for('login'))
@@ -256,6 +261,15 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+@app.route('/sw.js')
+def service_worker():
+    # Servido desde la raíz para que su ámbito (scope) sea toda la app
+    resp = send_from_directory(app.static_folder, 'sw.js')
+    resp.headers['Service-Worker-Allowed'] = '/'
+    resp.headers['Content-Type'] = 'application/javascript'
+    resp.headers['Cache-Control'] = 'no-cache'
+    return resp
 
 # ================= ROUTES =================
 @app.route('/')
