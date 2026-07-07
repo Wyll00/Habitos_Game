@@ -219,15 +219,14 @@
                     <article class="journal-card">
                         <div class="journal-header">
                             <span class="category-badge {{ entry.category|lower|replace(' ', '-') }}">{{ entry.category }}</span>
-                            <span class="entry-date">{{ entry.created_at.strftime('%d %b %Y - %H:%M') }}</span>
+                            <span class="entry-date">{{ entry.date.strftime('%d %b %Y - %H:%M') }}</span>
                         </div>
-                        <h3 class="entry-title">{{ entry.title }}</h3>
                         {% if entry.content %}
                         <p class="entry-content">{{ entry.content }}</p>
                         {% endif %}
-                        {% if entry.image_filename %}
+                        {% if entry.image_path %}
                         <div class="entry-image-container">
-                            <img src="{{ url_for('static', filename='uploads/' + entry.image_filename) }}" alt="Progreso" class="entry-image">
+                            <img src="{{ url_for('static', filename='uploads/' + entry.image_path) }}" alt="Progreso" class="entry-image">
                         </div>
                         {% endif %}
                     </article>
